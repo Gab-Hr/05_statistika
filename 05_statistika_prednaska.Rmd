@@ -1,0 +1,168 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-03-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+library(readxl)
+library(dplyr)
+library(tidyr)
+
+
+D <- read_excel("ELOVLs.xlsx", sheet = "data_all")
+
+str(D)
+
+#1.zda se liší exprese v tumoru a zdravé tkáni?
+#párový test
+
+
+
+
+#2.zda koreluje exprese v tumoru a zdravé tkáni?
+#
+#
+#3.zda se liší exprese v tumoru u mužů a žen?
+#nepárový test, třeba t-test
+#
+#4.zda se liší exprese v tumoru u různých genů?
+#jednovýběrový test
+
+#5.zda poměr exprese v tumor/non-tumor tkáni vykazuje nějaký významný posun?
+#kvadrát ???test
+
+#6.zda zvýšení exprese (ano/ne) souvisí s pohlavím
+
+
+#Existuje vztah mezi expresí v tumor a non-tumor vzorcích?
+
+```{r}
+cor.test(D$tumor, D$non.tumor, method = "pearson")
+
+plot(tumor ~ non.tumor, data = D)
+```
+
+```{r}
+
+hist(D$tumor)
+
+```
+
+```{r}
+
+hist(D$non.tumor)
+
+```
+
+
+
+```{r}
+
+hist(log10(D$non.tumor))
+
+```
+
+
+
+
+```{r}
+
+hist(log10(D$non.tumor))
+
+```
+
+```{r}
+
+cor.test(D$tumor, D$non.tumor, method = "pearson")
+
+```
+
+cor.test(D$tumor, D$non.tumor, method = "spearman")
+
+
+
+#Liší se ratio tumor/non-tumor od jedničky?
+
+```{r}
+
+hist(D$`ratio T/N`)
+
+
+```
+
+```{r}
+
+hist(log10(D$`ratio T/N`))
+
+
+```
+
+
+
+D <- D %>% mutate(ratio_log = log10(`ratio T/N`))
+
+
+
+#one-sample t-test
+t.test(D$ratio_log, mu = 0)
+
+
+boxplot(D$ratio_log)
+plot(D$ratio_log)
+abline(0, 0, col="red")
+
+
+#Wilcoxon test (non-parametric)
+
+wilcox.test(D$ratio_log, mu = 0)
+
+#Paired-sample t-test
+
+t.test(D$tumor, D$non.tumor, paired = TRUE)
+
+hist(D$tumor - D$non.tumor)
+
+lillie.test(D$tumor - D$non.tumor)
+
+
+boxplot(D$tumor, D$non.tumor)
+boxplot(D$tumor - D$non.tumor); abline(0, 0, col="red")
+
+#Paired Wilcoxon test (non-parametric)
+
+wilcox.test(D$tumor, D$non.tumor, paired = TRUE)
+
+
+#Liší se hodnoty tumor a non-tumor obecně?
+#Liší se hodnoty ratio u mužů a žen?
+
+##independent t-test
+# Built-in independent t-test on wide data
+t.test(D$tumor, D$non.tumor)
+# Built-in independent t-test on long data
+t.test(expression ~ tissue, data = DL)
