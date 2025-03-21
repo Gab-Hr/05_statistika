@@ -166,3 +166,13 @@ wilcox.test(D$tumor, D$non.tumor, paired = TRUE)
 t.test(D$tumor, D$non.tumor)
 # Built-in independent t-test on long data
 t.test(expression ~ tissue, data = DL)
+
+DL <-D %>%
+pivot_longer(cols = c(non.tumor, tumor),
+names_to= "tissue",
+values_to= "expression")
+
+t.test(ratio_log ~ sex, data = D)
+# Welch’s t-test (default)
+
+
