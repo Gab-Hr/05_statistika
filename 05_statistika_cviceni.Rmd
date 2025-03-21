@@ -1,0 +1,174 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-03-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+install.packages("nortest")
+install.packages("car")
+
+library(dplyr)
+library(tidyr)
+library(nortest)  # normality testing 
+library(car) 
+library(readxl) #aby mi to načetlo excel
+
+# Levene test
+
+
+#### UKOL 1: 
+# Nactete data data_examples.xlsx, list "WB quantification". 
+# Data si adekvatne prevedte do long formatu, viz minule cviceni. 
+
+A <- read_excel("data_examples.xlsx", sheet = "WB quantification")
+
+
+
+A <- A %>% 
+  pivot_longer(Condition_1:Condition_6, names_to = "Condition", values_to = "WB") %>% 
+  separate(Condition, into = c("del", "Condition"), sep = "_", convert = TRUE) %>% 
+  dplyr::select(-del)
+  
+  
+A <- A %>% 
+  mutate(Condition = as.factor(Condition), 
+         Replicate = as.factor(Replicate))
+
+# Otestujte, zda existuji rozdily v hodnotach WB mezi ruznymi kondicemi? 
+
+boxplot(WB ~ Condition, data = A)
+
+# Ověřte předpoklady použití zvoleného testu.
+
+hist(A$WB)
+
+tapply(A$WB, A$Condition, data = A)
+
+leveneTest(WB ~ Condition, data = A)
+
+a <- aov(WB ~ Condition, data = A)
+summary(a)
+TukeyHSD(a)
+
+# Vypočítejte popisné statistiky (např. průměr, SD, medián) hodnoceného parametru ve srovnávaných skupinách. 
+
+A %>% group_by(Condition) %>% 
+  summarise(
+    WB_mean = mean(WB),
+    WB_sd = sd(WB),
+    WB_median = median(WB)
+    )
+
+#### UKOL 2: 
+# Nactete data data_examples.xlsx, list "reporter assay". 
+
+B <- read_excel("data_examples.xlsx", sheet = "reporter assay")
+
+B <- B %>% 
+  mutate(Condition = as.factor(Condition), 
+         Replicate = as.factor(Replicate))
+
+# Otestujte, zda existuji rozdily v hodnotach Ratio mezi ruznymi kondicemi? 
+# Nezapomente na overeni predpokladu. 
+
+
+# opet to smeruje na model ANOVA, ale nejsou splneny predpoklady - kondice 2 nema zadny rozptyl!  
+boxplot(Ratio ~ Condition, data = B)
+
+
+kruskal.test(Ratio ~ Condition, B)
+
+# post-hoc testování dvojic 
+pairwise.wilcox.test(B$Ratio, B$Condition,
+p.adjust.method = "BH")
+
+pairwise.wilcox.test(B$Ratio, B$Condition, p.adjust.method = "BH")
+
+
+# nebo provedeme tedy dva t-testy a p-hodnoty adjustujeme 
+(t1 <- t.test(Ratio ~ 1, mu = 1, B[B$Condition == 1,]))
+(t2 <- t.test(Ratio ~ 1, mu = 1, B[B$Condition == 3,]))
+
+#nebo takto
+B %>% filter(Condition == 1) %>% 
+  t.test(Ratio ~ 1, mu = 1, data = .)
+
+B %>% filter(Condition == 3) %>% 
+  t.test(Ratio ~ 1, mu = 1, data = .)
+
+t1$p.value
+t2$p.value
+p.adjust(c(t1$p.value, t2$p.value), method = "BH")
+
+# Vypočítejte popisné statistiky hodnoceného parametru ve srovnávaných skupinách. 
+
+B %>% group_by(Condition) %>% 
+  summarise(
+    R_mean = mean(Ratio),
+    R_sd = sd(Ratio),
+    R_median = median(Ratio)
+    )
+
+
+#### UKOL 3: 
+# Nactete data data_examples.xlsx, list "qPCR". 
+
+C <- read_excel("data_examples.xlsx", sheet = "qPCR")
+str(C)
+View(C)
+
+# Seradte si faktory dle obrazku, viz minule cviceni. 
+
+C <- C %>% mutate(
+  Condition = factor(Condition, levels = c("wt", "#1", "#2", "#3")), 
+  Gene = factor(Gene, levels = c("Prickle1", "Fzd2", "Wnt9a")), 
+  Replicate = factor(Replicate)
+) 
+
+# Otestujte, zda existuji rozdily v hodnotach exprese mezi ruznymi kondicemi u ruznych genu. 
+
+boxplot(Expression ~ Gene + Condition, C, las = 2)
+
+
+# Vypočítejte popisné statistiky hodnoceného parametru ve srovnávaných skupinách. 
+
+
+#### UKOL 4: 
+# Nactete data data_examples.xlsx, list "immunofluorescence". 
+
+# Otestujte, zda se lisi frekvence u ruznych kondic. 
+# Napoveda: pracujte pouze s "axis.duplication", hodnota "normal je doplnek do 100 %. 
+# Jakeho typu je vstupni promenna. Zvolte spravny test.  
+
+
+
+### PRO RYCHLIKY: 
+# Vyberte vhodny test pro hodnoceni dat na listu "immunofluorescence B". 
+# Aplikujte ho. 
+# Vysledky interpretujte. 
+
+
