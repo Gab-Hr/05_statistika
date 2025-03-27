@@ -46,7 +46,7 @@ library(readxl) #aby mi to načetlo excel
 
 A <- read_excel("data_examples.xlsx", sheet = "WB quantification")
 
-
+View(A)
 
 A <- A %>% 
   pivot_longer(Condition_1:Condition_6, names_to = "Condition", values_to = "WB") %>% 
@@ -74,6 +74,8 @@ a <- aov(WB ~ Condition, data = A)
 summary(a)
 TukeyHSD(a)
 
+View(a)
+
 # Vypočítejte popisné statistiky (např. průměr, SD, medián) hodnoceného parametru ve srovnávaných skupinách. 
 
 A %>% group_by(Condition) %>% 
@@ -91,6 +93,10 @@ B <- read_excel("data_examples.xlsx", sheet = "reporter assay")
 B <- B %>% 
   mutate(Condition = as.factor(Condition), 
          Replicate = as.factor(Replicate))
+         
+str(B)
+
+View(B)
 
 # Otestujte, zda existuji rozdily v hodnotach Ratio mezi ruznymi kondicemi? 
 # Nezapomente na overeni predpokladu. 
@@ -103,15 +109,27 @@ boxplot(Ratio ~ Condition, data = B)
 kruskal.test(Ratio ~ Condition, B)
 
 # post-hoc testování dvojic 
+#NEFUNGUJE:(((
+    
+
 pairwise.wilcox.test(B$Ratio, B$Condition,
 p.adjust.method = "BH")
 
-pairwise.wilcox.test(B$Ratio, B$Condition, p.adjust.method = "BH")
 
 
 # nebo provedeme tedy dva t-testy a p-hodnoty adjustujeme 
 (t1 <- t.test(Ratio ~ 1, mu = 1, B[B$Condition == 1,]))
 (t2 <- t.test(Ratio ~ 1, mu = 1, B[B$Condition == 3,]))
+
+names(t1)
+p <- c(
+  t1$p.value,
+  t2$p.value
+  )
+  
+#Bonferroni correction
+p_adj = p.adjust(p, method = "bonferroni", n = length(p))
+p; p_adj
 
 #nebo takto
 B %>% filter(Condition == 1) %>% 
@@ -152,17 +170,46 @@ C <- C %>% mutate(
 # Otestujte, zda existuji rozdily v hodnotach exprese mezi ruznymi kondicemi u ruznych genu. 
 
 boxplot(Expression ~ Gene + Condition, C, las = 2)
+boxplot(Expression ~ Gene, C, las = 2)
+boxplot(Expression ~ Condition, C, las = 2)
+
+
+#two-way ANOVA
+
+c <- aov (Expression ~ Gene * Condition, C)
+TukeyHSD(c)
+TukeyHSD(c, "Gene")
+TukeyHSD(c, "Condition")
+
+# nesplněna homogenity rozptylů, klasický Kruskal-Walis test nepracuje se dvěma faktory 
+# vyřešíme příště modely 
+
 
 
 # Vypočítejte popisné statistiky hodnoceného parametru ve srovnávaných skupinách. 
+
+C %>% group_by(Gene, Condition) %>% 
+  summarise(Expr_mean = mean(Expression),
+  Expr_sd = sd(Expression),
+  Expr_median = median(Expression))
+
+
+
 
 
 #### UKOL 4: 
 # Nactete data data_examples.xlsx, list "immunofluorescence". 
 
+D <- read_excel("data_examples.xlsx", sheet = "immunofluorescence")
+str(D)
+
+View(D)
+
 # Otestujte, zda se lisi frekvence u ruznych kondic. 
 # Napoveda: pracujte pouze s "axis.duplication", hodnota "normal je doplnek do 100 %. 
 # Jakeho typu je vstupni promenna. Zvolte spravny test.  
+
+barplot(axis.duplication ~ Condition, data = D)
 
 
 
@@ -170,5 +217,9 @@ boxplot(Expression ~ Gene + Condition, C, las = 2)
 # Vyberte vhodny test pro hodnoceni dat na listu "immunofluorescence B". 
 # Aplikujte ho. 
 # Vysledky interpretujte. 
+
+E <- read_excel("data_examples.xlsx", sheet = "immunofluorescence B")
+
+View(E)
 
 
